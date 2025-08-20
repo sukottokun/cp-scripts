@@ -48,16 +48,14 @@ configure_solr() {
     terminus connection:set "$SITE_NAME.dev" git
     
     # Create temporary directory and clone the repo
-    debug_step "Clone repository" "git clone ssh://codeserver.dev.xxx@codeserver.dev.xxx.drush.in:2222/~/repository.git"
+    debug_step "Clone repository" "terminus local:clone $SITE_NAME.dev"
     print_status "Cloning repository to configure pantheon.yml..."
     
     TEMP_DIR=$(mktemp -d)
     cd "$TEMP_DIR"
     
-    # Get git clone command from Pantheon
-    GIT_URL=$(terminus connection:info "$SITE_NAME.dev" --field=git_command | sed 's/git clone //')
-    
-    if git clone "$GIT_URL" "$SITE_NAME-repo"; then
+    # Clone repository using terminus local:clone
+    if terminus local:clone "$SITE_NAME.dev" "$SITE_NAME-repo"; then
         cd "$SITE_NAME-repo"
         print_success "Repository cloned successfully"
     else
@@ -266,6 +264,103 @@ install_drupal_modules() {
     
     # Configure Solr
     configure_solr
+    
+# Function to configure Solr for Drupal
+configure_solr() {
+    debug_step "Configure Solr" "Enable Solr, clone repo, edit pantheon.yml, push changes"
+    
+    print_status "Configuring Solr for Drupal..."
+    
+    # Enable Solr via terminus
+    debug_step "Enable Solr service" "terminus solr:enable $SITE_NAME"
+    print_status "Enabling Solr service..."
+    if terminus solr:enable "$SITE_NAME"; then
+        print_success "Solr enabled successfully"
+    else
+        print_warning "Solr may already be enabled or failed to enable"
+    fi
+    
+    # Switch to git mode for making code changes
+    debug_step "Switch to Git mode" "terminus connection:set $SITE_NAME.dev git"
+    print_status "Switching to Git mode..."
+    terminus connection:set "$SITE_NAME.dev" git
+    
+    # Create temporary directory and clone the repo
+    debug_step "Clone repository" "git clone ssh://codeserver.dev.xxx@codeserver.dev.xxx.drush.in:2222/~/repository.git"
+    print_status "Cloning repository to configure pantheon.yml..."
+    
+    TEMP_DIR=$(mktemp -d)
+    cd "$TEMP_DIR"
+    
+    # Get git clone command from Pantheon
+    GIT_URL=$(terminus connection:info "$SITE_NAME.dev" --field=git_command | sed 's/git clone //')
+    
+    if git clone "$GIT_URL" "$SITE_NAME-repo"; then
+        cd "$SITE_NAME-repo"
+        print_success "Repository cloned successfully"
+    else
+        print_error "Failed to clone repository"
+        cd - > /dev/null
+        rm -rf "$TEMP_DIR"
+        return 1
+    fi
+    
+    # Check if pantheon.yml exists, create if not
+    debug_step "Edit pantheon.yml" "Add Solr configuration to pantheon.yml"
+    print_status "Configuring pantheon.yml for Solr..."
+    
+    if [[ ! -f pantheon.yml ]]; then
+        print_status "Creating pantheon.yml..."
+        cat > pantheon.yml << 'EOF'
+api_version: 1
+
+search:
+  solr:
+    version: 8
+EOF
+    else
+        print_status "Updating existing pantheon.yml..."
+        # Check if search section already exists
+        if grep -q "^search:" pantheon.yml; then
+            print_warning "Search configuration already exists in pantheon.yml"
+        else
+            # Add search configuration
+            cat >> pantheon.yml << 'EOF'
+
+search:
+  solr:
+    version: 8
+EOF
+        fi
+    fi
+    
+    # Commit and push changes
+    debug_step "Commit and push changes" "git add, commit, and push pantheon.yml"
+    print_status "Committing and pushing pantheon.yml changes..."
+    
+    git add pantheon.yml
+    
+    if git diff --staged --quiet; then
+        print_warning "No changes to commit"
+    else
+        git commit -m "Add Solr configuration to pantheon.yml"
+        
+        if git push origin master; then
+            print_success "pantheon.yml changes pushed successfully"
+        else
+            print_error "Failed to push changes"
+            cd - > /dev/null
+            rm -rf "$TEMP_DIR"
+            return 1
+        fi
+    fi
+    
+    # Clean up
+    cd - > /dev/null
+    rm -rf "$TEMP_DIR"
+    
+    print_success "Solr configuration completed"
+    print_status "Note: It may take a few minutes for Solr changes to take effect"
 }
 
 # Function to create WordPress site
