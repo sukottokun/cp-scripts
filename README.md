@@ -3,7 +3,7 @@
 This script automates the creation and setup of WordPress or Drupal sites on Pantheon with Content Publisher functionality.
 
 ## 🚨 **IMPORTANT WARNING** 🚨
-**WordPress isn't working yet! Run it and it'll fuck your shit up!**
+**WordPress isn't working yet! Run it and it'll mess you up!**
 
 ## 📋 **What This Script Does**
 
