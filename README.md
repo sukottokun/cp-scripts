@@ -13,11 +13,11 @@ This comprehensive automation script handles the entire process of creating and 
 - Creates either a ~~WordPress~~ or **Drupal** site on Pantheon
 - Generates random, clean site names using dictionary words
 - Sets up admin accounts with specified credentials
-- Handles both Drupal 10 Composer-managed and WordPress site types
+- Handles both Drupal 10 Composer-managed and ~~WordPress~~ site types
 
 ### **Module/Plugin Installation**
 - **Drupal**: Installs and enables `search_api_pantheon` and `pantheon_content_publisher` modules
-- **WordPress**: Installs Pantheon Content Publisher plugin and common plugins (Akismet, Jetpack)
+- **WordPress**: Installs Pantheon Content Publisher plugin
 - Automatically commits all changes to the repository
 
 ### **Solr Configuration (Drupal)**
