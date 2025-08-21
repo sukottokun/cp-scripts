@@ -1,10 +1,12 @@
 #!/bin/bash
 
 # Pantheon Content Publisher Site Creation and Setup Script
-# This script creates either a WordPress or Drupal site on Pantheon and installs modules/plugins
+# This script creates either a WordPress or Drupal site on Pantheon and sets up the site for Content Publisher.
 # It adds the modules or plugins and commits them to the repo, then enables them.
 # It configures solr, clones the repo, and creates the pantheon.yml file.
-# It then commits and pushes the yml changes to the repo.
+# It then commits and pushes the pantheon.yml changes to the remote repo.
+# It then creates the PCC site ID and configures the webhook. 
+# You have to have PCC and Terminus installed.
 #
 # DEBUG MODE: Set DEBUG_MODE=true below to step through major operations
 # - Press Enter to continue to the next step
@@ -217,6 +219,43 @@ EOF
     print_status "Repository remains at: $HOME/pantheon-local-copies/$SITE_NAME"
 }
 
+# Function to create PCC site and configure webhook
+configure_pcc() {
+    debug_step "Create PCC site ID" "pcc site create --url $SITE_URL"
+    
+    print_status "Creating Pantheon Content Cloud site..."
+    
+    # Get the site URL without trailing slash
+    CLEAN_SITE_URL=$(echo "$SITE_URL" | sed 's/\/$//')
+    
+    # Create PCC site and capture the ID
+    PCC_OUTPUT=$(pcc site create --url "$CLEAN_SITE_URL" 2>&1)
+    
+    if [[ $? -eq 0 ]]; then
+        # Extract the site ID from the output (format: "Id: xXXXXXXXXXXX")
+        PCC_SITE_ID=$(echo "$PCC_OUTPUT" | grep -o 'Id: [a-zA-Z0-9]*' | cut -d' ' -f2)
+        
+        if [[ -n "$PCC_SITE_ID" ]]; then
+            print_success "PCC site created successfully with ID: $PCC_SITE_ID"
+            
+            # Configure the webhook
+            debug_step "Configure PCC webhook" "pcc site configure $PCC_SITE_ID --webhook-url $CLEAN_SITE_URL/api/pantheoncloud/webhook"
+            print_status "Configuring PCC webhook..."
+            
+            if pcc site configure "$PCC_SITE_ID" --webhook-url "$CLEAN_SITE_URL/api/pantheoncloud/webhook"; then
+                print_success "PCC webhook configured successfully"
+            else
+                print_warning "Failed to configure PCC webhook - you may need to do this manually"
+            fi
+        else
+            print_warning "Could not extract PCC site ID from output - you may need to create manually"
+        fi
+    else
+        print_warning "Failed to create PCC site - you may need to do this manually"
+        print_warning "Output: $PCC_OUTPUT"
+    fi
+}
+
 # Function to install Drupal modules
 install_drupal_modules() {
     debug_step "Install Drupal modules" "Switch to SFTP, install via composer, enable modules"
@@ -258,6 +297,12 @@ install_drupal_modules() {
     
     # Configure Solr
     configure_solr
+    
+    # Get site URL for PCC configuration
+    SITE_URL=$(terminus env:view "$SITE_NAME.dev" --print)
+    
+    # Configure Pantheon Content Cloud
+    configure_pcc
     
     print_success "Drupal modules installed and enabled"
 }
@@ -333,6 +378,12 @@ create_wordpress_site() {
     
     # Install WordPress plugins
     install_wordpress_plugins
+    
+    # Get site URL for PCC configuration  
+    SITE_URL=$(terminus env:view "$SITE_NAME.dev" --print)
+    
+    # Configure Pantheon Content Cloud
+    configure_pcc
 }
 
 # Function to install WordPress plugins
@@ -379,6 +430,32 @@ display_site_info() {
         echo "Admin Password: $WP_ADMIN_PASSWORD"
         echo "Additional User: admin_user"
     fi
+    
+    echo ""
+    echo "Pantheon Content Cloud Setup:"
+    echo "=============================="
+    
+    if [[ -n "$PCC_SITE_ID" ]]; then
+        echo "PCC Site ID: $PCC_SITE_ID"
+    else
+        echo "PCC Site ID: (creation may have failed - check output above)"
+    fi
+    
+    echo ""
+    echo "Next Steps:"
+    echo "==========="
+    echo "1. Create an access token for this collection ID here:"
+    echo "   https://content.pantheon.io/dashboard/settings/tokens?tab=0"
+    echo ""
+    
+    if [[ "$SITE_TYPE" == "drupal" ]]; then
+        CLEAN_SITE_URL=$(echo "$(terminus env:view "$SITE_NAME.dev" --print)" | sed 's/\/$//')
+        echo "2. Add the site ID and token in your Drupal site here:"
+        echo "   $CLEAN_SITE_URL/admin/structure/pantheon-content-publisher-collection"
+    else
+        echo "2. Configure the site ID and token in your WordPress admin panel"
+    fi
+    
     echo ""
 }
 
