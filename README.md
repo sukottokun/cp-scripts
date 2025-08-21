@@ -1,6 +1,7 @@
 # Pantheon Content Publisher Setup Script
 
 This script automates the creation and setup of WordPress or Drupal sites on Pantheon with Content Publisher functionality.
+* WordPress isn't working yet! Run it and it'll fuck your shit up. *
 
 ## Setup
 
