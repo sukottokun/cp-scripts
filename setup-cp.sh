@@ -1,10 +1,12 @@
 #!/bin/bash
 
-# Pantheon Site Creation and Setup Script
+# Pantheon Content Publisher Site Creation and Setup Script
 # This script creates either a WordPress or Drupal site on Pantheon and installs modules/plugins
+# It adds the modules or plugins and commits them to the repo, then enables them.
+# It configures solr, clones the repo, and creates the pantheon.yml file.
+# It then commits and pushes the yml changes to the repo.
 #
 # DEBUG MODE: Set DEBUG_MODE=true below to step through major operations
-# In debug mode, you can:
 # - Press Enter to continue to the next step
 # - Press 's' to skip the current step
 # - Press 'q' to quit the script
@@ -12,7 +14,7 @@
 set -e  # Exit on any error
 
 # Configuration
-MACHINE_TOKEN="1FhOx08DCFsXcpJJ6aYEygwu3Yl-K2g59jZMvDX_ltbZf"
+TERMINUS_MACHINE_TOKEN="1FhOx08DCFsXcpJJ6aYEygwu3Yl-K2g59jZMvDX_ltbZf"
 ORG="pantheon-employees"
 REGION="us"
 ADMIN_EMAIL="scottmassey@pantheon.io"
@@ -25,102 +27,6 @@ DEBUG_MODE=false
 # Function to print output
 print_status() {
     echo "[INFO] $1"
-}
-
-# Function to configure Solr for Drupal
-configure_solr() {
-    debug_step "Configure Solr" "Enable Solr, clone repo, edit pantheon.yml, push changes"
-    
-    print_status "Configuring Solr for Drupal..."
-    
-    # Enable Solr via terminus
-    debug_step "Enable Solr service" "terminus solr:enable $SITE_NAME"
-    print_status "Enabling Solr service..."
-    if terminus solr:enable "$SITE_NAME"; then
-        print_success "Solr enabled successfully"
-    else
-        print_warning "Solr may already be enabled or failed to enable"
-    fi
-    
-    # Switch to git mode for making code changes
-    debug_step "Switch to Git mode" "terminus connection:set $SITE_NAME.dev git"
-    print_status "Switching to Git mode..."
-    terminus connection:set "$SITE_NAME.dev" git
-    
-    # Create temporary directory and clone the repo
-    debug_step "Clone repository" "terminus local:clone $SITE_NAME.dev"
-    print_status "Cloning repository to configure pantheon.yml..."
-    
-    TEMP_DIR=$(mktemp -d)
-    cd "$TEMP_DIR"
-    
-    # Clone repository using terminus local:clone
-    if terminus local:clone "$SITE_NAME.dev" "$SITE_NAME-repo"; then
-        cd "$SITE_NAME-repo"
-        print_success "Repository cloned successfully"
-    else
-        print_error "Failed to clone repository"
-        cd - > /dev/null
-        rm -rf "$TEMP_DIR"
-        return 1
-    fi
-    
-    # Check if pantheon.yml exists, create if not
-    debug_step "Edit pantheon.yml" "Add Solr configuration to pantheon.yml"
-    print_status "Configuring pantheon.yml for Solr..."
-    
-    if [[ ! -f pantheon.yml ]]; then
-        print_status "Creating pantheon.yml..."
-        cat > pantheon.yml << 'EOF'
-api_version: 1
-
-search:
-  solr:
-    version: 8
-EOF
-    else
-        print_status "Updating existing pantheon.yml..."
-        # Check if search section already exists
-        if grep -q "^search:" pantheon.yml; then
-            print_warning "Search configuration already exists in pantheon.yml"
-        else
-            # Add search configuration
-            cat >> pantheon.yml << 'EOF'
-
-search:
-  solr:
-    version: 8
-EOF
-        fi
-    fi
-    
-    # Commit and push changes
-    debug_step "Commit and push changes" "git add, commit, and push pantheon.yml"
-    print_status "Committing and pushing pantheon.yml changes..."
-    
-    git add pantheon.yml
-    
-    if git diff --staged --quiet; then
-        print_warning "No changes to commit"
-    else
-        git commit -m "Add Solr configuration to pantheon.yml"
-        
-        if git push origin master; then
-            print_success "pantheon.yml changes pushed successfully"
-        else
-            print_error "Failed to push changes"
-            cd - > /dev/null
-            rm -rf "$TEMP_DIR"
-            return 1
-        fi
-    fi
-    
-    # Clean up
-    cd - > /dev/null
-    rm -rf "$TEMP_DIR"
-    
-    print_success "Solr configuration completed"
-    print_status "Note: It may take a few minutes for Solr changes to take effect"
 }
 
 print_success() {
@@ -190,12 +96,170 @@ terminus_login() {
     
     print_status "Logging into Terminus..."
     
-    if terminus auth:login --machine-token="$MACHINE_TOKEN"; then
+    if terminus auth:login --machine-token="$TERMINUS_MACHINE_TOKEN"; then
         print_success "Successfully logged into Terminus"
     else
         print_error "Failed to login to Terminus"
         exit 1
     fi
+}
+
+# Function to configure Solr for Drupal
+configure_solr() {
+    debug_step "Configure Solr" "Enable Solr, clone repo, edit pantheon.yml, push changes"
+    
+    print_status "Configuring Solr for Drupal..."
+    
+    # Enable Solr via terminus
+    debug_step "Enable Solr service" "terminus solr:enable $SITE_NAME"
+    print_status "Enabling Solr service..."
+    if terminus solr:enable "$SITE_NAME"; then
+        print_success "Solr enabled successfully"
+    else
+        print_warning "Solr may already be enabled or failed to enable"
+    fi
+    
+    # Switch to git mode for making code changes
+    debug_step "Switch to Git mode" "terminus connection:set $SITE_NAME.dev git --yes"
+    print_status "Switching to Git mode..."
+    terminus connection:set "$SITE_NAME.dev" git --yes
+    
+    # Clone repository using terminus local:clone
+    debug_step "Clone repository" "terminus local:clone $SITE_NAME"
+    print_status "Cloning repository to configure pantheon.yml..."
+    
+    # Set SSH options to auto-accept host keys and avoid prompts
+    export GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=/dev/null"
+    
+    # Store current directory to return to later
+    ORIGINAL_DIR=$(pwd)
+    
+    # Clone repository using terminus local:clone (clones to $HOME/pantheon-local-copies)
+    if terminus local:clone "$SITE_NAME"; then
+        # Navigate to the cloned repository
+        cd "$HOME/pantheon-local-copies/$SITE_NAME"
+        print_success "Repository cloned successfully"
+    else
+        print_error "Failed to clone repository"
+        unset GIT_SSH_COMMAND
+        cd "$ORIGINAL_DIR"
+        return 1
+    fi
+    
+    # Check if pantheon.yml exists, create if not
+    debug_step "Edit pantheon.yml" "Add Solr configuration to pantheon.yml"
+    print_status "Configuring pantheon.yml for Solr..."
+    
+    if [[ ! -f pantheon.yml ]]; then
+        print_status "Creating pantheon.yml..."
+        cat > pantheon.yml << 'EOF'
+api_version: 1
+
+search:
+  version: 8
+EOF
+    else
+        print_status "Updating existing pantheon.yml..."
+        
+        # Check if api_version is present
+        if ! grep -q "^api_version:" pantheon.yml; then
+            print_status "Adding missing api_version to pantheon.yml..."
+            # Create a new file with api_version at the top
+            {
+                echo "api_version: 1"
+                echo ""
+                cat pantheon.yml
+            } > pantheon.yml.tmp && mv pantheon.yml.tmp pantheon.yml
+        fi
+        
+        # Check if search section already exists
+        if grep -q "^search:" pantheon.yml; then
+            print_warning "Search configuration already exists in pantheon.yml"
+        else
+            # Add search configuration
+            cat >> pantheon.yml << 'EOF'
+
+search:
+  version: 8
+EOF
+        fi
+    fi
+    
+    # Commit and push changes
+    debug_step "Commit and push changes" "git add, commit, and push pantheon.yml"
+    print_status "Committing and pushing pantheon.yml changes..."
+    
+    git add pantheon.yml
+    
+    if git diff --staged --quiet; then
+        print_warning "No changes to commit"
+    else
+        git commit -m "Add Solr configuration to pantheon.yml"
+        
+        if git push origin master; then
+            print_success "pantheon.yml changes pushed successfully"
+        else
+            print_error "Failed to push changes"
+            unset GIT_SSH_COMMAND
+            cd "$ORIGINAL_DIR"
+            return 1
+        fi
+    fi
+    
+    # Clean up - return to original directory
+    cd "$ORIGINAL_DIR"
+    
+    # Reset SSH settings
+    unset GIT_SSH_COMMAND
+    
+    print_success "Solr configuration completed"
+    print_status "Note: It may take a few minutes for Solr changes to take effect"
+    print_status "Repository remains at: $HOME/pantheon-local-copies/$SITE_NAME"
+}
+
+# Function to install Drupal modules
+install_drupal_modules() {
+    debug_step "Install Drupal modules" "Switch to SFTP, install via composer, enable modules"
+    
+    print_status "Installing Drupal modules..."
+    
+    # Switch to SFTP mode for file changes
+    debug_step "Switch to SFTP mode" "terminus connection:set $SITE_NAME.dev sftp --yes"
+    print_status "Switching to SFTP mode..."
+    terminus connection:set "$SITE_NAME.dev" sftp --yes
+    
+    # Install modules via Composer
+    debug_step "Install search_api_pantheon" "terminus composer $SITE_NAME.dev -- require drupal/search_api_pantheon:^8"
+    print_status "Installing search_api_pantheon module..."
+    terminus composer "$SITE_NAME.dev" -- require drupal/search_api_pantheon:^8
+    
+    debug_step "Install pantheon_content_publisher" "terminus composer $SITE_NAME.dev -- require 'drupal/pantheon_content_publisher:^1.0'"
+    print_status "Installing pantheon_content_publisher module..."
+    terminus composer "$SITE_NAME.dev" -- require 'drupal/pantheon_content_publisher:^1.0'
+    
+    # Commit composer files before switching to git mode
+    debug_step "Commit composer changes" "terminus env:commit $SITE_NAME.dev --message='Add Drupal modules via composer'"
+    print_status "Committing composer file changes..."
+    if terminus env:commit "$SITE_NAME.dev" --message="Add Drupal modules via composer"; then
+        print_success "Composer changes committed"
+    else
+        print_warning "No changes to commit or commit failed - continuing anyway"
+    fi
+    
+    # Enable modules
+    debug_step "Enable modules" "terminus drush $SITE_NAME.dev -- en search_api_pantheon pantheon_content_publisher -y"
+    print_status "Enabling modules..."
+    terminus drush "$SITE_NAME.dev" -- en search_api_pantheon pantheon_content_publisher -y
+    
+    # Clear cache
+    debug_step "Clear Drupal cache" "terminus drush $SITE_NAME.dev -- cr"
+    print_status "Clearing Drupal cache..."
+    terminus drush "$SITE_NAME.dev" -- cr
+    
+    # Configure Solr
+    configure_solr
+    
+    print_success "Drupal modules installed and enabled"
 }
 
 # Function to create Drupal site
@@ -230,137 +294,6 @@ create_drupal_site() {
     
     # Install modules
     install_drupal_modules
-}
-
-# Function to install Drupal modules
-install_drupal_modules() {
-    debug_step "Install Drupal modules" "Switch to SFTP, install via composer, enable modules"
-    
-    print_status "Installing Drupal modules..."
-    
-    # Switch to SFTP mode for file changes
-    debug_step "Switch to SFTP mode" "terminus connection:set $SITE_NAME.dev sftp"
-    print_status "Switching to SFTP mode..."
-    terminus connection:set "$SITE_NAME.dev" sftp
-    
-    # Install modules via Composer
-    debug_step "Install search_api_pantheon" "terminus composer $SITE_NAME.dev -- require drupal/search_api_pantheon:^8"
-    print_status "Installing search_api_pantheon module..."
-    terminus composer "$SITE_NAME.dev" -- require drupal/search_api_pantheon:^8
-    
-    debug_step "Install pantheon_content_publisher" "terminus composer $SITE_NAME.dev -- require 'drupal/pantheon_content_publisher:^1.0'"
-    print_status "Installing pantheon_content_publisher module..."
-    terminus composer "$SITE_NAME.dev" -- require 'drupal/pantheon_content_publisher:^1.0'
-    
-    # Enable modules
-    debug_step "Enable modules" "terminus drush $SITE_NAME.dev -- en search_api_pantheon pantheon_content_publisher -y"
-    print_status "Enabling modules..."
-    terminus drush "$SITE_NAME.dev" -- en search_api_pantheon pantheon_content_publisher -y
-    
-    # Clear cache
-    debug_step "Clear Drupal cache" "terminus drush $SITE_NAME.dev -- cr"
-    print_status "Clearing Drupal cache..."
-    terminus drush "$SITE_NAME.dev" -- cr
-    
-    # Configure Solr
-    configure_solr
-    
-# Function to configure Solr for Drupal
-configure_solr() {
-    debug_step "Configure Solr" "Enable Solr, clone repo, edit pantheon.yml, push changes"
-    
-    print_status "Configuring Solr for Drupal..."
-    
-    # Enable Solr via terminus
-    debug_step "Enable Solr service" "terminus solr:enable $SITE_NAME"
-    print_status "Enabling Solr service..."
-    if terminus solr:enable "$SITE_NAME"; then
-        print_success "Solr enabled successfully"
-    else
-        print_warning "Solr may already be enabled or failed to enable"
-    fi
-    
-    # Switch to git mode for making code changes
-    debug_step "Switch to Git mode" "terminus connection:set $SITE_NAME.dev git"
-    print_status "Switching to Git mode..."
-    terminus connection:set "$SITE_NAME.dev" git
-    
-    # Create temporary directory and clone the repo
-    debug_step "Clone repository" "git clone ssh://codeserver.dev.xxx@codeserver.dev.xxx.drush.in:2222/~/repository.git"
-    print_status "Cloning repository to configure pantheon.yml..."
-    
-    TEMP_DIR=$(mktemp -d)
-    cd "$TEMP_DIR"
-    
-    # Get git clone command from Pantheon
-    GIT_URL=$(terminus connection:info "$SITE_NAME.dev" --field=git_command | sed 's/git clone //')
-    
-    if git clone "$GIT_URL" "$SITE_NAME-repo"; then
-        cd "$SITE_NAME-repo"
-        print_success "Repository cloned successfully"
-    else
-        print_error "Failed to clone repository"
-        cd - > /dev/null
-        rm -rf "$TEMP_DIR"
-        return 1
-    fi
-    
-    # Check if pantheon.yml exists, create if not
-    debug_step "Edit pantheon.yml" "Add Solr configuration to pantheon.yml"
-    print_status "Configuring pantheon.yml for Solr..."
-    
-    if [[ ! -f pantheon.yml ]]; then
-        print_status "Creating pantheon.yml..."
-        cat > pantheon.yml << 'EOF'
-api_version: 1
-
-search:
-  solr:
-    version: 8
-EOF
-    else
-        print_status "Updating existing pantheon.yml..."
-        # Check if search section already exists
-        if grep -q "^search:" pantheon.yml; then
-            print_warning "Search configuration already exists in pantheon.yml"
-        else
-            # Add search configuration
-            cat >> pantheon.yml << 'EOF'
-
-search:
-  solr:
-    version: 8
-EOF
-        fi
-    fi
-    
-    # Commit and push changes
-    debug_step "Commit and push changes" "git add, commit, and push pantheon.yml"
-    print_status "Committing and pushing pantheon.yml changes..."
-    
-    git add pantheon.yml
-    
-    if git diff --staged --quiet; then
-        print_warning "No changes to commit"
-    else
-        git commit -m "Add Solr configuration to pantheon.yml"
-        
-        if git push origin master; then
-            print_success "pantheon.yml changes pushed successfully"
-        else
-            print_error "Failed to push changes"
-            cd - > /dev/null
-            rm -rf "$TEMP_DIR"
-            return 1
-        fi
-    fi
-    
-    # Clean up
-    cd - > /dev/null
-    rm -rf "$TEMP_DIR"
-    
-    print_success "Solr configuration completed"
-    print_status "Note: It may take a few minutes for Solr changes to take effect"
 }
 
 # Function to create WordPress site
@@ -409,9 +342,9 @@ install_wordpress_plugins() {
     print_status "Installing WordPress plugins..."
     
     # Switch to SFTP mode for plugin installations
-    debug_step "Switch to SFTP mode" "terminus connection:set $SITE_NAME.dev sftp"
+    debug_step "Switch to SFTP mode" "terminus connection:set $SITE_NAME.dev sftp --yes"
     print_status "Switching to SFTP mode..."
-    terminus connection:set "$SITE_NAME.dev" sftp
+    terminus connection:set "$SITE_NAME.dev" sftp --yes
     
     # Install Pantheon Content Publisher plugin from GitHub (latest version)
     debug_step "Install Pantheon Content Publisher plugin" "terminus wp $SITE_NAME.dev -- plugin install https://github.com/pantheon-systems/pantheon-content-publisher-wordpress/releases/latest/download/pantheon-content-publisher-for-wordpress.zip --activate"
@@ -451,9 +384,9 @@ display_site_info() {
 
 # Main script execution
 main() {
-    echo "==================================="
-    echo "Pantheon Site Deployment Script"
-    echo "==================================="
+    echo "======================================================="
+    echo "Pantheon Content Publisher Site Deployment Script"
+    echo "======================================================="
     echo ""
     
     if [[ "$DEBUG_MODE" == true ]]; then
