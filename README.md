@@ -11,9 +11,9 @@ This comprehensive automation script handles the entire process of creating and 
 
 ### **Site Creation & Setup**
 - Creates either a ~~WordPress~~ or **Drupal** site on Pantheon
-- Generates random, clean site names using dictionary words
-- Sets up admin accounts with specified credentials
-- Handles both Drupal 10 Composer-managed and ~~WordPress~~ site types
+- Generates a random site name using dictionary words
+- Sets up CMS admin accounts with specified credentials
+- Handles both Drupal 10 Composer-managed and ~~WordPress~~ upstreams
 
 ### **Module/Plugin Installation**
 - **Drupal**: Installs and enables `search_api_pantheon` and `pantheon_content_publisher` modules
@@ -49,27 +49,8 @@ This comprehensive automation script handles the entire process of creating and 
 #### **Terminus CLI**
 [Terminus](https://docs.pantheon.io/terminus) is Pantheon's command line interface that provides advanced interaction with the platform.
 
-**Installation:**
-```bash
-# macOS (using Homebrew)
-brew install pantheon-systems/tap/terminus
-
-# Linux/Windows
-# Download from: https://github.com/pantheon-systems/terminus/releases
-```
-
 #### **PCC CLI (Pantheon Content Cloud)**
 [PCC CLI](https://www.npmjs.com/package/@pantheon-systems/pcc-cli) is the command line tool for Pantheon Content Cloud operations.
-
-**Installation:**
-```bash
-npm install -g @pantheon-systems/pcc-cli
-```
-
-### **Authentication Setup**
-1. Generate a [Pantheon Machine Token](https://docs.pantheon.io/machine-tokens)
-2. Configure Terminus: `terminus auth:login --machine-token=YOUR_TOKEN`
-3. Verify PCC CLI access: `pcc --help`
 
 ## Setup
 
