@@ -15,16 +15,19 @@
 
 set -e  # Exit on any error
 
-# Configuration
-TERMINUS_MACHINE_TOKEN="1FhOx08DCFsXcpJJ6aYEygwu3Yl-K2g59jZMvDX_ltbZf"
-ORG="pantheon-employees"
-REGION="us"
-ADMIN_EMAIL="scottmassey@pantheon.io"
-ADMIN_PASSWORD="demo"
-WP_ADMIN_PASSWORD="StrongPassword123!"
+# Load environment variables
+if [[ -f .env ]]; then
+    source .env
+else
+    echo "[ERROR] .env file not found. Please create one based on env.example"
+    exit 1
+fi
 
-# Debug mode - set to true to step through major operations
-DEBUG_MODE=false
+# Validate required environment variables
+if [[ -z "$TERMINUS_MACHINE_TOKEN" || -z "$ORG" || -z "$ADMIN_EMAIL" ]]; then
+    echo "[ERROR] Missing required environment variables. Please check your .env file"
+    exit 1
+fi
 
 # Function to print output
 print_status() {
