@@ -441,18 +441,19 @@ display_site_info() {
     echo ""
     echo "Next Steps:"
     echo "==========="
-    echo "1. Create an access token for this collection ID here:"
-    echo "   https://content.pantheon.io/dashboard/settings/tokens?tab=0"
+    echo "1. Create an access token for the above collection ID here:"
+    echo "   https://content.pantheon.io/dashboard/settings/tokens"
     echo ""
     
     if [[ "$SITE_TYPE" == "drupal" ]]; then
         CLEAN_SITE_URL=$(echo "$(terminus env:view "$SITE_NAME.dev" --print)" | sed 's/\/$//')
-        echo "2. Add the site ID and token in your Drupal site here:"
+        echo "2. Add the site ID and token you just created to your Drupal site here:"
         echo "   $CLEAN_SITE_URL/admin/structure/pantheon-content-publisher-collection"
     else
         echo "2. Configure the site ID and token in your WordPress admin panel"
     fi
     
+    echo "3. Install the Google Add-on and you should be good to publish!"
     echo ""
 }
 
