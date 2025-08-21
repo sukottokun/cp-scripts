@@ -405,12 +405,6 @@ install_wordpress_plugins() {
     print_status "Installing Pantheon Content Publisher plugin..."
     terminus wp "$SITE_NAME.dev" -- plugin install https://github.com/pantheon-systems/pantheon-content-publisher-wordpress/releases/latest/download/pantheon-content-publisher-for-wordpress.zip --activate
     
-    # Install other common plugins
-    debug_step "Install additional plugins" "terminus wp $SITE_NAME.dev -- plugin install akismet jetpack --activate"
-    print_status "Installing additional plugins..."
-    terminus wp "$SITE_NAME.dev" -- plugin install akismet --activate
-    terminus wp "$SITE_NAME.dev" -- plugin install jetpack --activate
-    
     print_success "WordPress plugins installation completed"
 }
 
