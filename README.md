@@ -1,7 +1,75 @@
 # Pantheon Content Publisher Setup Script
 
 This script automates the creation and setup of WordPress or Drupal sites on Pantheon with Content Publisher functionality.
-* WordPress isn't working yet! Run it and it'll fuck your shit up. *
+
+## 🚨 **IMPORTANT WARNING** 🚨
+**WordPress isn't working yet! Run it and it'll fuck your shit up!**
+
+## 📋 **What This Script Does**
+
+This comprehensive automation script handles the entire process of creating and configuring Pantheon sites for Content Publisher:
+
+### **Site Creation & Setup**
+- Creates either a ~~WordPress~~ or **Drupal** site on Pantheon
+- Generates random, clean site names using dictionary words
+- Sets up admin accounts with specified credentials
+- Handles both Drupal 10 Composer-managed and WordPress site types
+
+### **Module/Plugin Installation**
+- **Drupal**: Installs and enables `search_api_pantheon` and `pantheon_content_publisher` modules
+- **WordPress**: Installs Pantheon Content Publisher plugin and common plugins (Akismet, Jetpack)
+- Automatically commits all changes to the repository
+
+### **Solr Configuration (Drupal)**
+- Enables Solr service via Terminus
+- Clones the repository locally using Terminus [local:clone](https://docs.pantheon.io/terminus/commands/local-clone) command 
+- Creates/updates `pantheon.yml` with proper Solr configuration
+- Commits and pushes all changes to the remote repository
+
+### **Pantheon Content Cloud (PCC) Setup**
+- Creates PCC site ID
+- Configures webhook URL for content synchronization
+
+### **Misc**
+- **Debug Mode**: Step-through execution with skip/quit options
+- **Error Handling**: Comprehensive error checking and user feedback
+- **Repository Management**: Automatic Git operations and commits
+- **Environment Validation**: Ensures all required tools and credentials are available
+
+### **Prerequisites**
+- Pantheon Terminus CLI installed and configured
+- Pantheon Content Cloud CLI (`pcc`) installed
+- Valid Pantheon machine token with appropriate permissions
+- Access to the specified organization
+
+## 🔧 **Installation**
+
+### **Required Tools**
+
+#### **Terminus CLI**
+[Terminus](https://docs.pantheon.io/terminus) is Pantheon's command line interface that provides advanced interaction with the platform.
+
+**Installation:**
+```bash
+# macOS (using Homebrew)
+brew install pantheon-systems/tap/terminus
+
+# Linux/Windows
+# Download from: https://github.com/pantheon-systems/terminus/releases
+```
+
+#### **PCC CLI (Pantheon Content Cloud)**
+[PCC CLI](https://www.npmjs.com/package/@pantheon-systems/pcc-cli) is the command line tool for Pantheon Content Cloud operations.
+
+**Installation:**
+```bash
+npm install -g @pantheon-systems/pcc-cli
+```
+
+### **Authentication Setup**
+1. Generate a [Pantheon Machine Token](https://docs.pantheon.io/machine-tokens)
+2. Configure Terminus: `terminus auth:login --machine-token=YOUR_TOKEN`
+3. Verify PCC CLI access: `pcc --help`
 
 ## Setup
 
