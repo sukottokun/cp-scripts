@@ -271,14 +271,25 @@ install_drupal_modules() {
     terminus connection:set "$SITE_NAME.dev" sftp --yes
     
     # Install modules via Composer
-    debug_step "Install search_api_pantheon" "terminus composer $SITE_NAME.dev -- require drupal/search_api_pantheon:^8"
+    debug_step "Install search_api dev version" "terminus composer $SITE_NAME.dev -- require 'drupal/search_api:1.x-dev@dev'"
+    print_status "Installing search_api dev version (required for Pantheon Solr bug fix)..."
+    terminus composer "$SITE_NAME.dev" -- require 'drupal/search_api:1.x-dev@dev' --no-cache
+    
+    debug_step "Install search_api_pantheon" "terminus composer $SITE_NAME.dev -- require 'drupal/search_api_pantheon:^8'"
     print_status "Installing search_api_pantheon module..."
-    # Install search_api_pantheon dev version (required for views to work)
-    terminus composer "$SITE_NAME.dev" -- require drupal/search_api_pantheon:dev-1.x --no-cache
+    terminus composer "$SITE_NAME.dev" -- require 'drupal/search_api_pantheon:^8' --no-cache
     
     debug_step "Install pantheon_content_publisher" "terminus composer $SITE_NAME.dev -- require 'drupal/pantheon_content_publisher:^1.0'"
     print_status "Installing pantheon_content_publisher module..."
     terminus composer "$SITE_NAME.dev" -- require 'drupal/pantheon_content_publisher:^1.0' --no-cache
+    
+    debug_step "Install pathauto" "terminus composer $SITE_NAME.dev -- require 'drupal/pathauto'"
+    print_status "Installing pathauto module..."
+    terminus composer "$SITE_NAME.dev" -- require 'drupal/pathauto' --no-cache
+    
+    debug_step "Install token" "terminus composer $SITE_NAME.dev -- require 'drupal/token'"
+    print_status "Installing token module..."
+    terminus composer "$SITE_NAME.dev" -- require 'drupal/token' --no-cache
     
     # Commit composer files before switching to git mode
     debug_step "Commit composer changes" "terminus env:commit $SITE_NAME.dev --message='Add Drupal modules via composer'"
@@ -290,9 +301,9 @@ install_drupal_modules() {
     fi
     
     # Enable modules
-    debug_step "Enable modules" "terminus drush $SITE_NAME.dev -- en search_api_pantheon pantheon_content_publisher -y"
+    debug_step "Enable modules" "terminus drush $SITE_NAME.dev -- en search_api search_api_pantheon pantheon_content_publisher pathauto token -y"
     print_status "Enabling modules..."
-    terminus drush "$SITE_NAME.dev" -- en search_api_pantheon pantheon_content_publisher -y
+    terminus drush "$SITE_NAME.dev" -- en search_api search_api_pantheon pantheon_content_publisher pathauto token -y
     
     # Clear cache
     debug_step "Clear Drupal cache" "terminus drush $SITE_NAME.dev -- cr"
@@ -313,13 +324,13 @@ install_drupal_modules() {
 
 # Function to create Drupal site
 create_drupal_site() {
-    debug_step "Create Drupal site" "terminus site:create --org=$ORG --region=$REGION -- $SITE_NAME $SITE_NAME drupal-10-composer-managed"
+    debug_step "Create Drupal site" "terminus site:create --org=$ORG --region=$REGION -- $SITE_NAME $SITE_NAME drupal-11-composer-managed"
     
     print_status "Creating Drupal site: $SITE_NAME"
     
     # Create the site
     print_status "Creating site (this may take 10 minutes)..."
-    if terminus site:create --org="$ORG" --region="$REGION" -- "$SITE_NAME" "$SITE_NAME" drupal-10-composer-managed; then
+    if terminus site:create --org="$ORG" --region="$REGION" -- "$SITE_NAME" "$SITE_NAME" drupal-11-composer-managed; then
         print_success "Site created successfully"
     else
         print_error "Failed to create site"
