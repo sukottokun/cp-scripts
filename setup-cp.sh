@@ -273,11 +273,12 @@ install_drupal_modules() {
     # Install modules via Composer
     debug_step "Install search_api_pantheon" "terminus composer $SITE_NAME.dev -- require drupal/search_api_pantheon:^8"
     print_status "Installing search_api_pantheon module..."
-    terminus composer "$SITE_NAME.dev" -- require drupal/search_api_pantheon:^8
+    # Install search_api_pantheon dev version (required for views to work)
+    terminus composer "$SITE_NAME.dev" -- require drupal/search_api_pantheon:dev-1.x --no-cache
     
     debug_step "Install pantheon_content_publisher" "terminus composer $SITE_NAME.dev -- require 'drupal/pantheon_content_publisher:^1.0'"
     print_status "Installing pantheon_content_publisher module..."
-    terminus composer "$SITE_NAME.dev" -- require 'drupal/pantheon_content_publisher:^1.0'
+    terminus composer "$SITE_NAME.dev" -- require 'drupal/pantheon_content_publisher:^1.0' --no-cache
     
     # Commit composer files before switching to git mode
     debug_step "Commit composer changes" "terminus env:commit $SITE_NAME.dev --message='Add Drupal modules via composer'"
