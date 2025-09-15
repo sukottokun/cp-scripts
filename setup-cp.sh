@@ -412,6 +412,15 @@ install_wordpress_plugins() {
     print_status "Installing Pantheon Content Publisher plugin..."
     terminus remote:wp "$SITE_NAME.dev" -- plugin install https://github.com/pantheon-systems/pantheon-content-publisher-wordpress/releases/latest/download/pantheon-content-publisher-for-wordpress.zip --activate
     
+    # Commit plugin changes before switching to git mode
+    debug_step "Commit plugin changes" "terminus env:commit $SITE_NAME.dev --message='Add WordPress plugins'"
+    print_status "Committing plugin changes..."
+    if terminus env:commit "$SITE_NAME.dev" --message="Add WordPress plugins"; then
+        print_success "Plugin changes committed"
+    else
+        print_warning "No changes to commit or commit failed - continuing anyway"
+    fi
+    
     print_success "WordPress plugins installation completed"
 }
 
