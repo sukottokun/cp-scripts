@@ -2,21 +2,18 @@
 
 This script automates the creation and setup of WordPress or Drupal sites on Pantheon with Content Publisher functionality.
 
-## 🚨 **IMPORTANT WARNING** 🚨
-**WordPress isn't working yet! Run it and it'll mess you up!**
-
 ## 📋 **What This Script Does**
 
 This comprehensive automation script handles the entire process of creating and configuring Pantheon sites for Content Publisher:
 
 ### **Site Creation & Setup**
-- Creates either a ~~WordPress~~ or **Drupal** site on Pantheon
+- Creates either a WordPress or Drupal site on Pantheon
 - Generates a random site name using dictionary words
 - Sets up CMS admin accounts with specified credentials
-- Handles both Drupal 10 Composer-managed and ~~WordPress~~ upstreams
+- Handles both Drupal 11 Composer-managed and WordPress upstreams
 
 ### **Module/Plugin Installation**
-- **Drupal**: Installs and enables `search_api_pantheon` and `pantheon_content_publisher` modules
+- **Drupal**: Installs and enables `search_api_pantheon` (dev version currently), `pantheon_content_publisher`, `pathauto`, and `token` modules
 - **WordPress**: Installs Pantheon Content Publisher plugin
 - Automatically commits all changes to the repository
 

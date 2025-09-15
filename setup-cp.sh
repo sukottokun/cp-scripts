@@ -377,19 +377,14 @@ create_wordpress_site() {
     sleep 30
     
     # Complete WordPress installation
-    debug_step "Complete WordPress installation" "terminus wp $SITE_NAME.dev -- core install ..."
+    debug_step "Complete WordPress installation" "terminus remote:wp --progress $SITE_NAME.dev -- core install ..."
     print_status "Completing WordPress installation..."
     
     # Get site URL
     SITE_URL=$(terminus env:view "$SITE_NAME.dev" --print)
     
     # Complete the WordPress installation through WP-CLI
-    terminus wp "$SITE_NAME.dev" -- core install --url="$SITE_URL" --title="$SITE_NAME" --admin_user=admin --admin_password="$WP_ADMIN_PASSWORD" --admin_email="$ADMIN_EMAIL"
-    
-    # Create additional admin user
-    debug_step "Create additional admin user" "terminus wp $SITE_NAME.dev -- user create admin_user ..."
-    print_status "Creating admin user..."
-    terminus wp "$SITE_NAME.dev" -- user create admin_user "$ADMIN_EMAIL" --role=administrator --user_pass="$WP_ADMIN_PASSWORD"
+    terminus remote:wp --progress "$SITE_NAME.dev" -- core install --url="$SITE_URL" --title="$SITE_NAME" --admin_user=admin --admin_password="$WP_ADMIN_PASSWORD" --admin_email="$ADMIN_EMAIL"
     
     # Install WordPress plugins
     install_wordpress_plugins
@@ -413,9 +408,9 @@ install_wordpress_plugins() {
     terminus connection:set "$SITE_NAME.dev" sftp --yes
     
     # Install Pantheon Content Publisher plugin from GitHub (latest version)
-    debug_step "Install Pantheon Content Publisher plugin" "terminus wp $SITE_NAME.dev -- plugin install https://github.com/pantheon-systems/pantheon-content-publisher-wordpress/releases/latest/download/pantheon-content-publisher-for-wordpress.zip --activate"
+    debug_step "Install Pantheon Content Publisher plugin" "terminus remote:wp $SITE_NAME.dev -- plugin install https://github.com/pantheon-systems/pantheon-content-publisher-wordpress/releases/latest/download/pantheon-content-publisher-for-wordpress.zip --activate"
     print_status "Installing Pantheon Content Publisher plugin..."
-    terminus wp "$SITE_NAME.dev" -- plugin install https://github.com/pantheon-systems/pantheon-content-publisher-wordpress/releases/latest/download/pantheon-content-publisher-for-wordpress.zip --activate
+    terminus remote:wp "$SITE_NAME.dev" -- plugin install https://github.com/pantheon-systems/pantheon-content-publisher-wordpress/releases/latest/download/pantheon-content-publisher-for-wordpress.zip --activate
     
     print_success "WordPress plugins installation completed"
 }
@@ -466,6 +461,7 @@ display_site_info() {
     fi
     
     echo "3. Install the Google Add-on and you should be good to publish!"
+    echo "https://workspace.google.com/marketplace/app/content_publisher/432998952749"
     echo ""
 }
 
