@@ -393,7 +393,7 @@ create_wordpress_site() {
     SITE_URL=$(terminus env:view "$SITE_NAME.dev" --print)
     
     # Configure Pantheon Content Cloud
-    configure_pcc
+    # configure_pcc  # Disabled for WordPress
 }
 
 # Function to install WordPress plugins
@@ -444,29 +444,33 @@ display_site_info() {
         echo "Additional User: admin_user"
     fi
     
-    echo ""
-    echo "Pantheon Content Cloud Setup:"
-    echo "=============================="
-    
-    if [[ -n "$PCC_SITE_ID" ]]; then
-        echo "PCC Site ID: $PCC_SITE_ID"
-    else
-        echo "PCC Site ID: (creation may have failed - check output above)"
-    fi
-    
-    echo ""
-    echo "Next Steps:"
-    echo "==========="
-    echo "1. Create an access (drupal) or management (wordpress) token for the above collection ID here:"
-    echo "   https://content.pantheon.io/dashboard/settings/tokens"
-    echo ""
-    
     if [[ "$SITE_TYPE" == "drupal" ]]; then
+        echo ""
+        echo "Pantheon Content Cloud Setup:"
+        echo "=============================="
+        
+        if [[ -n "$PCC_SITE_ID" ]]; then
+            echo "PCC Site ID: $PCC_SITE_ID"
+        else
+            echo "PCC Site ID: (creation may have failed - check output above)"
+        fi
+        
+        echo ""
+        echo "Next Steps:"
+        echo "==========="
+        echo "1. Create an access token for the above collection ID here:"
+        echo "   https://content.pantheon.io/dashboard/settings/tokens"
+        echo ""
+        
         CLEAN_SITE_URL=$(echo "$(terminus env:view "$SITE_NAME.dev" --print)" | sed 's/\/$//')
         echo "2. Add the site ID and token you just created to your Drupal site here:"
         echo "   $CLEAN_SITE_URL/admin/structure/pantheon-content-publisher-collection"
     else
-        echo "2. Configure the site ID and token in your WordPress admin panel"
+        echo ""
+        echo "Next Steps:"
+        echo "==========="
+        echo "1. Configure your WordPress site settings in the admin panel"
+        echo "2. Install additional plugins as needed"
     fi
     
     echo "3. Install the Google Add-on and you should be good to publish!"
