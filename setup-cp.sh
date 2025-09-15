@@ -415,6 +415,10 @@ install_wordpress_plugins() {
     # Commit plugin changes before switching to git mode
     debug_step "Commit plugin changes" "terminus env:commit $SITE_NAME.dev --message='Add WordPress plugins'"
     print_status "Committing plugin changes..."
+    
+    # Small delay to ensure filesystem changes are synced
+    sleep 20
+    
     if terminus env:commit "$SITE_NAME.dev" --message="Add WordPress plugins"; then
         print_success "Plugin changes committed"
     else
