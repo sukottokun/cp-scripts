@@ -457,7 +457,7 @@ display_site_info() {
     echo ""
     echo "Next Steps:"
     echo "==========="
-    echo "1. Create an access token for the above collection ID here:"
+    echo "1. Create an access (drupal) or management (wordpress) token for the above collection ID here:"
     echo "   https://content.pantheon.io/dashboard/settings/tokens"
     echo ""
     
