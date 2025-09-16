@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# shellcheck disable=SC1091
+
 # Pantheon Content Publisher Site Creation and Setup Script
 # This script creates either a WordPress or Drupal site on Pantheon and sets up the site for Content Publisher.
 # It adds the modules or plugins and commits them to the repo, then enables them.
@@ -56,7 +58,7 @@ debug_step() {
             echo "Command: $2"
         fi
         echo "=================="
-        read -p "Press Enter to continue, 's' to skip this step, or 'q' to quit: " DEBUG_ACTION
+        read -r -p "Press Enter to continue, 's' to skip this step, or 'q' to quit: " DEBUG_ACTION
         case $DEBUG_ACTION in
             s|S)
                 echo "Skipping step..."
@@ -234,6 +236,7 @@ configure_pcc() {
     # Create PCC site and capture the ID
     PCC_OUTPUT=$(pcc site create --url "$CLEAN_SITE_URL" 2>&1)
     
+    # shellcheck disable=SC2181
     if [[ $? -eq 0 ]]; then
         # Extract the site ID from the output (format: "Id: xXXXXXXXXXXX")
         PCC_SITE_ID=$(echo "$PCC_OUTPUT" | grep -o 'Id: [a-zA-Z0-9]*' | cut -d' ' -f2)
@@ -445,7 +448,6 @@ display_site_info() {
     else
         echo "Admin Username: admin"
         echo "Admin Password: $WP_ADMIN_PASSWORD"
-        echo "Additional User: admin_user"
     fi
     
     if [[ "$SITE_TYPE" == "drupal" ]]; then
@@ -466,7 +468,8 @@ display_site_info() {
         echo "   https://content.pantheon.io/dashboard/settings/tokens"
         echo ""
         
-        CLEAN_SITE_URL=$(echo "$(terminus env:view "$SITE_NAME.dev" --print)" | sed 's/\/$//')
+
+        CLEAN_SITE_URL=$(terminus env:view "$SITE_NAME.dev" --print | sed 's/\/$//')
         echo "2. Add the site ID and token you just created to your Drupal site here:"
         echo "   $CLEAN_SITE_URL/admin/structure/pantheon-content-publisher-collection"
     else
@@ -497,7 +500,7 @@ main() {
     
     # Get site type from user
     while true; do
-        read -p "Choose site type (drupal/wordpress): " SITE_TYPE
+        read -r -p "Choose site type (drupal/wordpress): " SITE_TYPE
         case $SITE_TYPE in
             drupal|wordpress)
                 break
@@ -513,7 +516,7 @@ main() {
     generate_site_name
     
     # Confirm with user
-    read -p "Proceed with creating $SITE_TYPE site '$SITE_NAME'? (y/N): " CONFIRM
+    read -r -p "Proceed with creating $SITE_TYPE site '$SITE_NAME'? (y/N): " CONFIRM
     if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
         print_warning "Operation cancelled"
         exit 0
