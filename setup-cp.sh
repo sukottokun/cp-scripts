@@ -226,7 +226,7 @@ EOF
 
 # Function to create PCC site and configure webhook
 configure_pcc() {
-    debug_step "Create PCC site ID" "pcc site create --url $SITE_URL"
+    debug_step "Create PCC site ID" "pcc site create --url $SITE_URL --accountEmail $ADMIN_EMAIL"
     
     print_status "Creating Pantheon Content Cloud site..."
     
@@ -234,7 +234,7 @@ configure_pcc() {
     CLEAN_SITE_URL=$(echo "$SITE_URL" | sed 's/\/$//')
     
     # Create PCC site and capture the ID
-    PCC_OUTPUT=$(pcc site create --url "$CLEAN_SITE_URL" 2>&1)
+    PCC_OUTPUT=$(pcc site create --url "$CLEAN_SITE_URL" --accountEmail "$ADMIN_EMAIL" 2>&1)
     
     # shellcheck disable=SC2181
     if [[ $? -eq 0 ]]; then
