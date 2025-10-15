@@ -5,9 +5,11 @@
 # Pantheon Content Publisher Site Creation and Setup Script
 # This script creates either a WordPress or Drupal site on Pantheon and sets up the site for Content Publisher.
 # It adds the modules or plugins and commits them to the repo, then enables them.
-# It configures solr, clones the repo, and creates the pantheon.yml file.
+# For Drupal, it configures solr, clones the repo, and creates the pantheon.yml file.
+# Pathauto is also included, so comment out or edit as needed.
 # It then commits and pushes the pantheon.yml changes to the remote repo.
 # It then creates the PCC site ID and configures the webhook. 
+# It's simpler for WordPress.
 # You have to have PCC and Terminus installed.
 #
 # DEBUG MODE: Set DEBUG_MODE=true below to step through major operations
