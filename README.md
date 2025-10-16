@@ -4,7 +4,7 @@ This script automates the creation and setup of WordPress or Drupal sites on Pan
 
 ## 📋 **What This Script Does**
 
-This comprehensive automation script handles the entire process of creating and configuring Pantheon sites for Content Publisher:
+This script handles the entire process of creating and configuring Pantheon sites for Content Publisher:
 
 ### **Site Creation & Setup**
 - Creates either a WordPress or Drupal site on Pantheon
