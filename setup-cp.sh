@@ -120,7 +120,6 @@ configure_solr() {
     print_status "Configuring Solr for Drupal..."
     
     # Enable Solr via terminus
-    debug_step "Enable Solr service" "terminus solr:enable $SITE_NAME"
     print_status "Enabling Solr service..."
     if terminus solr:enable "$SITE_NAME"; then
         print_success "Solr enabled successfully"
@@ -129,12 +128,10 @@ configure_solr() {
     fi
     
     # Switch to git mode for making code changes
-    debug_step "Switch to Git mode" "terminus connection:set $SITE_NAME.dev git --yes"
     print_status "Switching to Git mode..."
     terminus connection:set "$SITE_NAME.dev" git --yes
     
     # Clone repository using terminus local:clone
-    debug_step "Clone repository" "terminus local:clone $SITE_NAME"
     print_status "Cloning repository to configure pantheon.yml..."
     
     # Set SSH options to auto-accept host keys and avoid prompts
@@ -156,7 +153,6 @@ configure_solr() {
     fi
     
     # Check if pantheon.yml exists, create if not
-    debug_step "Edit pantheon.yml" "Add Solr configuration to pantheon.yml"
     print_status "Configuring pantheon.yml for Solr..."
     
     if [[ ! -f pantheon.yml ]]; then
@@ -172,7 +168,7 @@ EOF
         
         # Check if api_version is present
         if ! grep -q "^api_version:" pantheon.yml; then
-            print_status "Adding api version and search configuration to pantheon.yml..."
+            print_status "Adding missing api_version to pantheon.yml..."
             # Create a new file with api_version at the top
             {
                 echo "api_version: 1"
@@ -195,7 +191,6 @@ EOF
     fi
     
     # Commit and push changes
-    debug_step "Commit and push changes" "git add, commit, and push pantheon.yml"
     print_status "Committing and pushing pantheon.yml changes..."
     
     git add pantheon.yml
@@ -247,7 +242,6 @@ configure_pcc() {
             print_success "PCC site created successfully with ID: $PCC_SITE_ID"
             
             # Configure the webhook
-            debug_step "Configure PCC webhook" "pcc site configure $PCC_SITE_ID --webhook-url $CLEAN_SITE_URL/api/pantheoncloud/webhook"
             print_status "Configuring PCC webhook..."
             
             if pcc site configure "$PCC_SITE_ID" --webhook-url "$CLEAN_SITE_URL/api/pantheoncloud/webhook"; then
@@ -271,33 +265,26 @@ install_drupal_modules() {
     print_status "Installing Drupal modules..."
     
     # Switch to SFTP mode for file changes
-    debug_step "Switch to SFTP mode" "terminus connection:set $SITE_NAME.dev sftp --yes"
     print_status "Switching to SFTP mode..."
     terminus connection:set "$SITE_NAME.dev" sftp --yes
     
     # Install modules via Composer
-    debug_step "Install search_api dev version" "terminus composer $SITE_NAME.dev -- require 'drupal/search_api:1.x-dev@dev'"
     print_status "Installing search_api dev version (required for Pantheon Solr bug fix)..."
     terminus composer "$SITE_NAME.dev" -- require 'drupal/search_api:1.x-dev@dev' --no-cache
     
-    debug_step "Install search_api_pantheon" "terminus composer $SITE_NAME.dev -- require 'drupal/search_api_pantheon:^8'"
     print_status "Installing search_api_pantheon module..."
     terminus composer "$SITE_NAME.dev" -- require 'drupal/search_api_pantheon:^8' --no-cache
     
-    debug_step "Install pantheon_content_publisher" "terminus composer $SITE_NAME.dev -- require 'drupal/pantheon_content_publisher:^1.0'"
     print_status "Installing pantheon_content_publisher module..."
     terminus composer "$SITE_NAME.dev" -- require 'drupal/pantheon_content_publisher:^1.0' --no-cache
     
-    debug_step "Install pathauto" "terminus composer $SITE_NAME.dev -- require 'drupal/pathauto'"
     print_status "Installing pathauto module..."
     terminus composer "$SITE_NAME.dev" -- require 'drupal/pathauto' --no-cache
     
-    debug_step "Install token" "terminus composer $SITE_NAME.dev -- require 'drupal/token'"
     print_status "Installing token module..."
     terminus composer "$SITE_NAME.dev" -- require 'drupal/token' --no-cache
     
     # Commit composer files before switching to git mode
-    debug_step "Commit composer changes" "terminus env:commit $SITE_NAME.dev --message='Add Drupal modules via composer'"
     print_status "Committing composer file changes..."
     if terminus env:commit "$SITE_NAME.dev" --message="Add Drupal modules via composer"; then
         print_success "Composer changes committed"
@@ -306,12 +293,10 @@ install_drupal_modules() {
     fi
     
     # Enable modules
-    debug_step "Enable modules" "terminus drush $SITE_NAME.dev -- en search_api search_api_pantheon pantheon_content_publisher pathauto token -y"
     print_status "Enabling modules..."
     terminus drush "$SITE_NAME.dev" -- en search_api search_api_pantheon pantheon_content_publisher pathauto token -y
     
     # Clear cache
-    debug_step "Clear Drupal cache" "terminus drush $SITE_NAME.dev -- cr"
     print_status "Clearing Drupal cache..."
     terminus drush "$SITE_NAME.dev" -- cr
     
@@ -343,7 +328,6 @@ create_drupal_site() {
     fi
     
     # Wait for site to be ready
-    debug_step "Wait for site to be ready" "sleep 30"
     print_status "Waiting for site to be ready..."
     sleep 30
     
@@ -377,12 +361,10 @@ create_wordpress_site() {
     fi
     
     # Wait for site to be ready
-    debug_step "Wait for site to be ready" "sleep 30"
     print_status "Waiting for site to be ready..."
     sleep 30
     
     # Complete WordPress installation
-    debug_step "Complete WordPress installation" "terminus remote:wp --progress $SITE_NAME.dev -- core install ..."
     print_status "Completing WordPress installation..."
     
     # Get site URL
@@ -408,17 +390,14 @@ install_wordpress_plugins() {
     print_status "Installing WordPress plugins..."
     
     # Switch to SFTP mode for plugin installations
-    debug_step "Switch to SFTP mode" "terminus connection:set $SITE_NAME.dev sftp --yes"
     print_status "Switching to SFTP mode..."
     terminus connection:set "$SITE_NAME.dev" sftp --yes
     
     # Install Pantheon Content Publisher plugin from GitHub (latest version)
-    debug_step "Install Pantheon Content Publisher plugin" "terminus remote:wp $SITE_NAME.dev -- plugin install https://github.com/pantheon-systems/pantheon-content-publisher-wordpress/releases/latest/download/pantheon-content-publisher-for-wordpress.zip --activate"
     print_status "Installing Pantheon Content Publisher plugin..."
     terminus remote:wp "$SITE_NAME.dev" -- plugin install https://github.com/pantheon-systems/pantheon-content-publisher-wordpress/releases/latest/download/pantheon-content-publisher-for-wordpress.zip --activate
     
     # Commit plugin changes before switching to git mode
-    debug_step "Commit plugin changes" "terminus env:commit $SITE_NAME.dev --message='Add WordPress plugins'"
     print_status "Committing plugin changes..."
     
     # Small delay to ensure filesystem changes are synced
