@@ -14,7 +14,7 @@ This script handles the entire process of creating and configuring Pantheon site
 
 ### **Module/Plugin Installation**
 - **Drupal**: Installs and enables `search_api_pantheon` (dev version currently), `pantheon_content_publisher`, `pathauto`, and `token` modules
-- **WordPress**: Installs Pantheon Content Publisher plugin
+- **WordPress**: Installs Pantheon Content Publisher plugin and Advanced Page Cache
 - Automatically commits all changes to the repository
 
 ### **Solr Configuration (Drupal)**
@@ -48,6 +48,7 @@ This script handles the entire process of creating and configuring Pantheon site
 
 #### **PCC CLI (Pantheon Content Cloud)**
 [PCC CLI](https://www.npmjs.com/package/@pantheon-systems/pcc-cli) is the command line tool for Pantheon Content Cloud operations.
+This works with v5.01.
 
 ## Setup
 

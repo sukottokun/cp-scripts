@@ -172,7 +172,7 @@ EOF
         
         # Check if api_version is present
         if ! grep -q "^api_version:" pantheon.yml; then
-            print_status "Adding missing api_version to pantheon.yml..."
+            print_status "Adding api version and search configuration to pantheon.yml..."
             # Create a new file with api_version at the top
             {
                 echo "api_version: 1"
