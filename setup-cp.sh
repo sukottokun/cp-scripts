@@ -440,23 +440,32 @@ display_site_info() {
         echo "Pantheon Content Cloud Setup:"
         echo "=============================="
         
-        if [[ -n "$PCC_SITE_ID" ]]; then
-            echo "PCC Site ID: $PCC_SITE_ID"
-        else
-            echo "PCC Site ID: (creation may have failed - check output above)"
-        fi
-        
-        echo ""
-        echo "Next Steps:"
-        echo "==========="
-        echo "1. Create an access token for the above collection ID here:"
-        echo "   https://content.pantheon.io/dashboard/settings/tokens"
-        echo ""
-        
+        if [[ "$CONFIGURE_PCC" == true ]]; then
+            if [[ -n "$PCC_SITE_ID" ]]; then
+                echo "PCC Site ID: $PCC_SITE_ID"
+            else
+                echo "PCC Site ID: (creation may have failed - check output above)"
+            fi
+            
+            echo ""
+            echo "Next Steps:"
+            echo "==========="
+            echo "1. Create an access token for the above collection ID here:"
+            echo "   https://content.pantheon.io/dashboard/settings/tokens"
+            echo ""
+            
 
-        CLEAN_SITE_URL=$(terminus env:view "$SITE_NAME.dev" --print | sed 's/\/$//')
-        echo "2. Add the site ID and token you just created to your Drupal site here:"
-        echo "   $CLEAN_SITE_URL/admin/structure/pantheon-content-publisher-collection"
+            CLEAN_SITE_URL=$(terminus env:view "$SITE_NAME.dev" --print | sed 's/\/$//')
+            echo "2. Add the site ID and token you just created to your Drupal site here:"
+            echo "   $CLEAN_SITE_URL/admin/structure/pantheon-content-publisher-collection"
+        else
+            echo "PCC Site ID: N/A (PCC configuration was skipped)"
+            echo ""
+            echo "Next Steps:"
+            echo "==========="
+            echo "1. To set up PCC later, visit:"
+            echo "   https://content.pantheon.io/"
+        fi
     else
         echo ""
         echo "Next Steps:"
