@@ -494,13 +494,18 @@ main() {
     
     # Get site type from user
     while true; do
-        read -r -p "Choose site type (drupal/wordpress): " SITE_TYPE
+        read -r -p "Choose site type (D)rupal or (W)ordPress: " SITE_TYPE
         case $SITE_TYPE in
-            drupal|wordpress)
+            d|D)
+                SITE_TYPE="drupal"
+                break
+                ;;
+            w|W)
+                SITE_TYPE="wordpress"
                 break
                 ;;
             *)
-                print_error "Please enter 'drupal' or 'wordpress'"
+                print_error "Please enter 'D' for Drupal or 'W' for WordPress"
                 ;;
         esac
     done
@@ -522,8 +527,8 @@ main() {
     generate_site_name
     
     # Confirm with user
-    read -r -p "Proceed with creating $SITE_TYPE site '$SITE_NAME'? (y/N): " CONFIRM
-    if [[ ! "$CONFIRM" =~ ^[Yy]$ ]]; then
+    read -r -p "Proceed with creating $SITE_TYPE site '$SITE_NAME'? (Y/n): " CONFIRM
+    if [[ "$CONFIRM" =~ ^[Nn]$ ]]; then
         print_warning "Operation cancelled"
         exit 0
     fi
