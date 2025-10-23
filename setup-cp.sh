@@ -303,12 +303,6 @@ install_drupal_modules() {
     # Configure Solr
     configure_solr
     
-    # Get site URL for PCC configuration
-    SITE_URL=$(terminus env:view "$SITE_NAME.dev" --print)
-    
-    # Configure Pantheon Content Cloud
-    configure_pcc
-    
     print_success "Drupal modules installed and enabled"
 }
 
@@ -343,6 +337,16 @@ create_drupal_site() {
     
     # Install modules
     install_drupal_modules
+    
+    # Configure Pantheon Content Cloud if enabled
+    if [[ "$CONFIGURE_PCC" == true ]]; then
+        # Get site URL for PCC configuration
+        SITE_URL=$(terminus env:view "$SITE_NAME.dev" --print)
+        
+        # Configure PCC
+        debug_step "Create PCC site ID" "pcc site create --url $SITE_URL --accountEmail $ADMIN_EMAIL"
+        configure_pcc
+    fi
 }
 
 # Function to create WordPress site
@@ -491,6 +495,18 @@ main() {
                 ;;
         esac
     done
+    
+    # For Drupal sites, ask about PCC configuration
+    CONFIGURE_PCC=true
+    if [[ "$SITE_TYPE" == "drupal" ]]; then
+        read -r -p "Configure Pantheon Content Cloud (PCC)? (Y/n): " PCC_CHOICE
+        if [[ "$PCC_CHOICE" =~ ^[Nn]$ ]]; then
+            CONFIGURE_PCC=false
+            print_status "PCC configuration will be skipped"
+        else
+            print_status "Complete setup with PCC configuration will proceed"
+        fi
+    fi
     
     # Generate site name
     debug_step "Generate site name" "Create random site name from dictionary words"
